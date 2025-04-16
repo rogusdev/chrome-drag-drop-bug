@@ -11,9 +11,20 @@
             text-align: center;
             line-height: 300px;
         }
+        #output {
+            width: 600px;
+            min-height: 200px;
+            border: 1px solid black;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
     </style>
 </head>
 <body>
-    <div id="dropzone">Drop files or folders here</div>
+    <div id="dropzone">Drop files here</div>
+    <h2>Messages:</h2>
+    <div id="output"></div>
 </body>
 </html>

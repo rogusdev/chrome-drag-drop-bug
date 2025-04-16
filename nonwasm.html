@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Non-WASM Drag and Drop Test</title>
+    <style>
+        #dropzone {
+            width: 300px;
+            height: 300px;
+            border: 2px dashed black;
+            text-align: center;
+            line-height: 300px;
+        }
+        #output {
+            width: 600px;
+            min-height: 200px;
+            border: 1px solid black;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+    </style>
+    <script>
+        function append_to_output(msg) {
+            let outputDiv = document.getElementById("output");
+            let textNode = document.createTextNode(msg);
+            outputDiv.appendChild(textNode);
+            // Add a newline for readability
+            outputDiv.appendChild(document.createTextNode("\n"));
+        }
+
+        function dragover(event) {
+            event.preventDefault();
+            let dt = event.dataTransfer;
+            if (dt) {
+                dt.dropEffect = "copy";
+            }
+        }
+
+        function drop(event) {
+            event.preventDefault();
+            let dt = event.dataTransfer;
+            if (dt && dt.items) {
+                let items = dt.items;
+                append_to_output(`Items: ${items.length}`);
+
+                for (let i = 0; i < items.length; i++) {
+                    let item = items[i];
+                    if (item) {
+                        let file = item.getAsFile();
+                        if (file) {
+                            append_to_output(`Items [${i}] filename: ${file.name}`);
+                        } else {
+                            append_to_output(`Items [${i}] not a file`);
+                        }
+                    } else {
+                        append_to_output(`Items [${i}] failed get()`);
+                    }
+                }
+
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="dropzone">Drop files here</div>
+    <h2>Messages:</h2>
+    <div id="output"></div>
+
+    <script>
+        let dropzone = document.getElementById("dropzone");
+        dropzone.addEventListener("dragover", dragover);
+        dropzone.addEventListener("drop", drop);
+        append_to_output("Non-WASM initialized, ready for drag and drop");
+    </script>
+</body>
+</html>

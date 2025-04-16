@@ -11,13 +11,13 @@ web-sys = { version = "0.3.77", features = [
     "Window",
     "Document",
     "Element",
-    "HtmlElement",
     "Event",
     "DragEvent",
     "DataTransfer",
     "DataTransferItem",
     "DataTransferItemList",
     "File",
+    "Text",
 ] }
 
 [lib]

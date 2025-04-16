@@ -1,11 +1,15 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{
-    console, Document, DragEvent, Element, HtmlElement, Window,
+    Document, DragEvent, Element, Window,
 };
 
-fn console_log(s: &str) {
-    console::log_1(&JsValue::from_str(s));
+fn append_to_output(document: &Document, msg: &str) -> () {
+    let output_div = document.get_element_by_id("output").expect("No output");
+    let text_node = document.create_text_node(msg);
+    output_div.append_child(&text_node).expect("Failed append output");
+    // Add a newline for readability
+    output_div.append_child(&document.create_text_node("\n")).expect("Failed append newline");
 }
 
 #[wasm_bindgen(start)]
@@ -16,37 +20,41 @@ pub async fn main() -> Result<(), JsValue> {
     let dropzone: Element = document
         .get_element_by_id("dropzone")
         .ok_or("No dropzone")?;
-    let dropzone: HtmlElement = dropzone.dyn_into()?;
 
     let dragover_cb = Closure::wrap(Box::new(move |event: DragEvent| {
         event.prevent_default();
-        if let Some(dt) = event.data_transfer() {
-            dt.set_drop_effect("copy");
+        if let Some(data_transfer) = event.data_transfer() {
+            data_transfer.set_drop_effect("copy");
         }
     }) as Box<dyn FnMut(DragEvent)>);
 
     let drop_cb = Closure::wrap(Box::new(move |event: DragEvent| {
         event.prevent_default();
+
+        let document = web_sys::window()
+            .and_then(|w| w.document())
+            .expect("No document");
+
         if let Some(data_transfer) = event.data_transfer() {
             let items = data_transfer.items();
-            console_log(&format!("Items: {:?}", items.length()));
+            append_to_output(&document, &format!("Items: {:?}", items.length()));
 
             wasm_bindgen_futures::spawn_local(async move {
                 for i in 0..items.length() {
                     if let Some(item) = items.get(i) {
                         match item.get_as_file() {
                             Ok(Some(file)) => {
-                                console_log(&format!("Items [{i}] filename: {}", file.name()));
+                                append_to_output(&document, &format!("Items [{i}] filename: {}", file.name()));
                             }
                             Ok(None) => {
-                                console_log(&format!("Items [{i}] not a file"));
+                                append_to_output(&document, &format!("Items [{i}] not a file"));
                             }
                             Err(_) => {
-                                console_log(&format!("Items [{i}] failed get_as_file()"));
+                                append_to_output(&document, &format!("Items [{i}] failed get_as_file()"));
                             }
                         }
                     } else {
-                        console_log(&format!("Items [{i}] failed get()"));
+                        append_to_output(&document, &format!("Items [{i}] failed get()"));
                     }
                 }
             });
@@ -61,6 +69,6 @@ pub async fn main() -> Result<(), JsValue> {
     dragover_cb.forget();
     drop_cb.forget();
 
-    console_log("WASM initialized, ready for drag and drop");
+    append_to_output(&document, "WASM initialized, ready for drag and drop");
     Ok(())
 }

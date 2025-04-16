@@ -1,5 +1,7 @@
 # wasm-drag-drop-test
-Test Rust WASM web_sys drag &amp; drop DragEvent for quotes in filenames
+Test Chrome drag &amp; drop event failures for quotes in filenames. Originally intended for demo-ing a bug in Rust WASM web_sys, but then determined to be a Chrome specific issue, even without WASM.
+
+A non-wasm (raw javascript) implementation [nonwasm.html] is provided to demonstrate that it also experiences the issue in Chrome.
 
 ## Testing
 Generally: run `./r` to start the server (must have rust + trunk installed). Drag & drop files into the outlined box. See the output below the drop zone.
@@ -8,7 +10,4 @@ Specifically: to see the error, drag & drop the `"Quoted".txt` (or the single qu
 
 Verified in Linux (Ubuntu) Firefox (seems to consistently work) + Chrome (seems to fail often, but not always, usually on the first try) -- Windows does not allow double quote chars in filenames to test fully there, but Firefox + Chrome both work fine for single quotes filesnames, it seems (and non quotes filenames, as expected).
 
-See [quoted_drop_failures.png] for a screenshot of this behavior in action. (Repeated drag & drops of the single and double quoted versions, individually.)
-
-A non-wasm (raw javascript) implementation is also provided to demonstrate that it does not experience the same issue.
-
+See [quoted_drop_failures.png] and [quoted_drop_failures_nonwasm.png] for screenshots of this behavior in action. (Repeated drag & drops of the single and double quoted versions, individually.)

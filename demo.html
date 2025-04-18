@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Demo Chrome Drag and Drop Bugs</title>
+    <style>
+        #dropzone {
+            width: 300px;
+            height: 300px;
+            border: 2px dashed black;
+            text-align: center;
+            line-height: 300px;
+        }
+        #output {
+            width: 600px;
+            min-height: 200px;
+            border: 1px solid black;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+        }
+    </style>
+    <script>
+        function append_to_output(msg) {
+            let outputDiv = document.getElementById("output");
+            let textNode = document.createTextNode(msg);
+            outputDiv.appendChild(textNode);
+            // Add a newline for readability
+            outputDiv.appendChild(document.createTextNode("\n"));
+        }
+
+        function dragover(event) {
+            event.preventDefault();
+            let dt = event.dataTransfer;
+            if (dt) {
+                dt.dropEffect = "copy";
+            }
+        }
+
+        async function processHandle(handle, prefix) {
+            let name = handle.name;
+            if (handle.kind === 'file') {
+                append_to_output(`${prefix} file: ${name}`);
+            } else if (handle.kind === 'directory') {
+                append_to_output(`${prefix} directory: ${name}`);
+                const dirPrefix = `${prefix}${name}/`;
+                // BUG: Chrome in Mac will for sure not include any directory child handles that have quotes in the filename
+                for await (const childHandle of handle.values()) {
+                    await processHandle(childHandle, `${dirPrefix}`);
+                }
+            } else {
+                append_to_output(`${prefix} unknown kind: ${handle.kind}`);
+            }
+        }
+
+        async function drop(event) {
+            event.preventDefault();
+            const dt = event.dataTransfer;
+            if (dt && dt.items) {
+                const items = Array.from(dt.items);
+                // BUG: Chromium in Linux will sometimes have zero items for dropped files (quotes in filename or not)
+                append_to_output(`Items: ${items.length}`);
+                if (items.length < 1) {
+                    return;
+                }
+
+                if ('getAsFileSystemHandle' in items[0]) {
+                    // QUIRK/BUG?: You must get all the handles at once, otherwise Chrome silently drops any after the first
+                    // i.e. items will have length > 1 but will only output processing of the first one, if we try to getAsFileSystemHandle in a for loop
+                    let handles = await Promise.all(items.map((item) => item.getAsFileSystemHandle()));
+                    append_to_output(`Handles: ${handles.length}`);
+                    for (let i = 0; i < handles.length; i++) {
+                        let handle = handles[i];
+                        if (!handle) {
+                            append_to_output(`Handles [${i}] failed get()`);
+                            continue;
+                        }
+
+                        await processHandle(handle, `Handles [${i}] /`);
+                    }
+                } else {
+                    for (let i = 0; i < items.length; i++) {
+                        let item = items[i];
+                        if (!item) {
+                            append_to_output(`Items [${i}] failed get()`);
+                            continue;
+                        }
+
+                        let file = item.getAsFile();
+                        if (file) {
+                            append_to_output(`Items [${i}] filename: ${file.name}`);
+                        } else {
+                            append_to_output(`Items [${i}] not a file`);
+                        }
+                    }
+                }
+            } else {
+                append_to_output(`No Data Transfer or items in drop`);
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="dropzone">Drop files here</div>
+    <h2>Messages:</h2>
+    <div id="output"></div>
+
+    <script>
+        let dropzone = document.getElementById("dropzone");
+        dropzone.addEventListener("dragover", dragover);
+        dropzone.addEventListener("drop", drop);
+        append_to_output("Demo initialized, ready for drag and drop");
+    </script>
+</body>
+</html>
